@@ -1,0 +1,30 @@
+#!/usr/bin/env raku
+
+use lib '.';
+use DolphyGrammar;
+use DolphyActions;
+use DolphyEvaluator;
+
+error('Usage: ./dolphy <filename>') unless @*ARGS.elems;
+
+my $filename = @*ARGS[0];
+error("Error: File $filename not found") unless $filename.IO.f;
+
+my $code = $filename.IO.slurp();
+
+my $evaluator = DolphyEvaluator.new();
+my $actions = DolphyActions.new(:evaluator($evaluator));
+my $ast = Dolphy.parse($code, :actions($actions));
+
+if $ast {
+    note 'OK';
+    $evaluator.eval($ast.made);
+}
+else {
+    error('Error: parses failed');
+}
+
+sub error($message) {
+    note $message;
+    exit;
+}
