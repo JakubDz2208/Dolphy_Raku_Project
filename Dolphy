@@ -1,9 +1,9 @@
 #!/usr/bin/env raku
 
 use lib '.';
-use DolphyGrammar;
-use DolphyActions;
-use DolphyEvaluator;
+use DGrammar;
+use Actions;
+use Evaluator;
 
 error('Usage: ./dolphy <filename>') unless @*ARGS.elems;
 
@@ -12,8 +12,8 @@ error("Error: File $filename not found") unless $filename.IO.f;
 
 my $code = $filename.IO.slurp();
 
-my $evaluator = DolphyEvaluator.new();
-my $actions = DolphyActions.new(:evaluator($evaluator));
+my $evaluator = Evaluator.new();
+my $actions = Actions.new(:evaluator($evaluator));
 my $ast = Dolphy.parse($code, :actions($actions));
 
 if $ast {

@@ -1,0 +1,213 @@
+use ASTMod;
+use Evaluator;
+
+class Actions {
+    has Evaluator $.evaluator;
+
+    method TOP($/) {
+        my $top = AST::TOP.new;
+        for $<statement> -> $statement {
+            $top.statements.push($statement.made);
+        }
+
+        $/.make($top);
+    }
+
+    method conditional-statement($/) {
+        $/.make(AST::Condition.new(
+            value => $/<value>.made,
+            statements => ($/<block>[0]<statement>.map: *.made),
+            antistatements => $/<block>[1] ?? ($/<block>[1]<statement>.map: *.made) !! (AST::Null),
+        ));
+    }
+
+    method loopped-statement($/) {
+        $/.make(AST::Loop.new(
+            variable => AST::Variable.new(
+                variable-name => ~$/<variable-name>
+            ),
+            statements => ($/<block><statement>.map: *.made),
+        ));
+    }
+
+    method while-statement($/) {
+        $/.make(AST::While.new(
+            value => $/<value>.made,
+            statements => ($/<block><statement>.map: *.made),
+        ));
+    }
+
+    method statement($/) {
+        $/.make($<statement>.made);
+    }
+
+    multi method variable-declaration($/) {
+        $/.make($<declaration>.made);
+    }
+
+    method scalar-declaration($/) {
+        $/.make(AST::ScalarDeclaration.new(
+            variable-name => ~$<variable-name>,
+            value => $<value> ?? $<value>.made !! AST::Null.new(),
+        ));
+    }
+
+    multi method array-declaration($/ where !$<value>) {
+        $/.make(AST::ArrayDeclaration.new(
+            variable-name => ~$<variable-name>,
+            elements => []
+        ));
+    }
+
+    sub init-array($variable-name, $elements) {
+        return AST::ArrayAssignment.new(
+            variable-name => $variable-name,
+            elements => $elements.map: *.made
+        );
+    }
+
+    multi method array-declaration($/ where $<value>) {
+        $/.make(init-array(~$<variable-name>, $<value>));
+    }
+
+    multi method assignment($/ where $<index> && $<index><array-index>) {
+        $/.make(AST::ArrayItemAssignment.new(
+            variable-name => ~$<variable-name>,
+            index => $<index>.made.value,
+            rhs => $<value>[0].made
+        ));
+    }
+    multi method assignment($/ where !$<index> && $<value> && !$<string>) {
+        if $<value>.elems == 1 {
+            $/.make(AST::ScalarAssignment.new(
+                variable-name => ~$<variable-name>,
+                rhs => $<value>[0].made
+            ));
+        }
+        else {
+            $/.make(AST::ArrayAssignment.new(
+                variable-name => ~$<variable-name>,
+                elements => ($<value>.map: *.made)
+            ));
+        }
+    }
+
+    multi method index($/ where $<array-index>) {
+        $/.make($<array-index>.made);
+    }
+
+    multi method array-index($/ where !$<variable-name>) {
+        $/.make(AST::NumberValue.new(
+            value => +$<integer>
+        ));
+    }
+
+    multi method array-index($/ where $<variable-name>) {
+        $/.make(AST::Variable.new(
+            variable-name => ~$<variable-name>,
+            evaluator => $!evaluator,
+        ));
+    }
+
+    method function-call($/) {
+        $/.make(AST::FunctionCall.new(
+            function-name => ~$<function-name>,
+            argument => $<value>.made,
+        ));
+    }
+
+    multi method value($/ where $<variable-name> && !$<index>) {
+        $/.make(AST::Variable.new(
+            variable-name => ~$<variable-name>,
+            evaluator => $!evaluator,
+        ));
+    }
+
+    multi method value($/ where $<variable-name> && $<index> && $<index><array-index>) {
+        $/.make(AST::ArrayItem.new(
+            variable-name => ~$<variable-name>,
+            index => $<index>.made,
+            evaluator => $!evaluator,
+        ));
+    }
+
+    multi method value($/ where $<expression>) {
+        $/.make($<expression>.made);
+    }
+
+    multi method value($/ where $<string>) {
+        $/.make($<string>.made);
+    }
+
+    multi method value($/ where $<function-call>) {
+        $/.make(AST::FunctionCall.new(
+            function-name => ~$<function-call><function-name>,
+            argument => $<function-call><value>.made,
+        ));
+    }
+
+    method expression($/) {
+        $/.make($<expr>.made);
+    }
+
+    multi method expr($/ where $<number>) {
+        $/.make($<number>.made);
+    }
+
+    multi method expr($/ where $<string>) {
+        $/.make($<string>.made);
+    }
+
+    multi method expr($/ where $<variable-name> && !$<index>) {
+        $/.make(AST::Variable.new(
+            variable-name => ~$<variable-name>,
+            evaluator => $!evaluator,
+        ));
+    }
+
+    multi method expr($/ where $<variable-name> && $<index> && $<index><array-index>) {
+        $/.make(AST::ArrayItem.new(
+            variable-name => ~$<variable-name>,
+            index => $<index>.made,
+            evaluator => $!evaluator,
+        ));
+    }
+
+    multi method expr($/ where $<expr> && !$<op>) {
+        $/.make($<expr>[0].made);
+    }
+
+    multi method expr($/ where $<expr> && $<op>) {
+        $/.make(AST::MathOperations.new(
+            operators => ($<op>.map: ~*),
+            operands => ($<expr>.map: *.made)
+        ));
+    }
+
+    multi method expr($/ where $<expression>) {
+        $/.make($<expression>.made);
+    }
+
+    method number($/) {
+        $/.make(AST::NumberValue.new(
+            value => +$/
+        ));
+    }
+
+    method string($/) {
+        my $match = $/[0];
+
+        my @interpolations;
+        push @interpolations, [
+                .Str,
+                .from - $match.from - 1,
+                .pos - .from + 1,
+            ] for $match<variable-name>;
+
+        $/.make(AST::StringValue.new(
+            evaluator => $!evaluator,
+            value => ~$match,
+            interpolations => @interpolations
+        ));
+    }
+}
