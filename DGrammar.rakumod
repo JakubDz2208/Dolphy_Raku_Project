@@ -111,7 +111,7 @@ grammar Dolphy is Comments does Number {
     }
 
     multi token op(5) {
-        '**'
+        '^'
     }
 
     rule expression {

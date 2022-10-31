@@ -97,7 +97,7 @@ class AST::MathOperations is ASTNode {
     multi sub operation('/', $a, $b) {
         $a / $b
     }
-    multi sub operation('**', $a, $b) {
+    multi sub operation('^', $a, $b) {
         $a ** $b
     }
     method value() {

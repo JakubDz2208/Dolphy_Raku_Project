@@ -28,9 +28,4 @@ class Functions {
         return $value.value;
     }
 
-    # len
-
-    multi method call-function('len', %var, ASTNode $node) {
-        
-    }
 }

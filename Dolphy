@@ -17,7 +17,6 @@ my $actions = Actions.new(:evaluator($evaluator));
 my $ast = Dolphy.parse($code, :actions($actions));
 
 if $ast {
-    note 'OK';
     $evaluator.eval($ast.made);
 }
 else {

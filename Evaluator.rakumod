@@ -7,9 +7,9 @@ class Evaluator {
     method eval(ASTNode $top) {
         # dd $top;
 
-        self.eval-node($_) for $top.statements;
+        say self.eval-node($_) for $top.statements;
 
-        say %!var;
+        # say %!var;
     }
 
     # Control flow
