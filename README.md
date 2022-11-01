@@ -2,7 +2,7 @@
 
 ## What is Dolphy?
 
-Dolphy is variable interpreter based on raku which allows you to do basic math stuff, operate on strings and integers, create arrays and even create own functions.
+Dolphy is variable interpreter based on raku which allows you to do basic math stuff, operate on strings and integers and create arrays.
 
 ## Get started
 
