@@ -31,11 +31,14 @@ Input:
 our var;
 var = 5;
 out var;
-var = 7;
+var = -7;
 print var;
+float = 7.5;
+print float;
 ```     
 Output:
 ```
 5
-7
+-7
+7.5
 ```
