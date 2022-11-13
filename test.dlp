@@ -1,0 +1,8 @@
+our x;
+x = 1.22;
+out x;
+our y;
+y = 15;
+print y;
+
+
